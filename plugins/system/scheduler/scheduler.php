@@ -166,7 +166,7 @@ class PlgSystemScheduler extends JPlugin
 			$now  = time();
 			$last = (int) $taskParams['lastrun'];
 			$cache_timeout = (int) $taskParams['cachetimeout'];
-			$cache_timeout = 3600 * $cache_timeout;
+			$cache_timeout = 60 * $cache_timeout;
 
 			if ((abs($now - $last) < $cache_timeout))
 			{
