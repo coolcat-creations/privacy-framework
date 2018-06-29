@@ -14,7 +14,7 @@ use Joomla\Registry\Registry;
 /**
  * Joomla! scheduler plugin
  *
- * @since   __DEPLOY_VERSION__
+ * @since  __DEPLOY_VERSION__
  */
 class PlgSystemScheduler extends JPlugin
 {
@@ -36,6 +36,7 @@ class PlgSystemScheduler extends JPlugin
 	public function onAfterRespond()
 	{
 		$startTime = microtime(true);
+
 		// Get the timeout for Joomla! system scheduler
 		/** @var \Joomla\Registry\Registry $params */
 		$cache_timeout = (int) $this->params->get('cachetimeout', 1);
@@ -112,11 +113,12 @@ class PlgSystemScheduler extends JPlugin
 
 		// Check all tasks plugin and if needed trigger those
 		$this->checkAndTrigger();
+
 		// Log the time it took to run
 		$endTime    = microtime(true);
 		$timeToLoad = sprintf('%0.2f', $endTime - $startTime);
 		JLog::add(
-			'Main Scheduler tooks ' . $timeToLoad . ' seconds',
+			'Main Scheduler took ' . $timeToLoad . ' seconds',
 			JLog::INFO,
 			'scheduler'
 		);
@@ -155,7 +157,7 @@ class PlgSystemScheduler extends JPlugin
 			return;
 		}
 
-		// Scatena l'inferno
+		// Unleash hell
 		JPluginHelper::importPlugin('cronnable');
 		$dispatcher = JEventDispatcher::getInstance();
 
@@ -231,6 +233,9 @@ class PlgSystemScheduler extends JPlugin
 
 	/**
 	 * Update last run.
+	 *
+	 * @param   integer   $eid     The plugin id
+	 * @param   registry  $params  The plugin parameters
 	 *
 	 * @return  void
 	 *
