@@ -181,6 +181,7 @@ class PlgSystemScheduler extends JPlugin
 				JLog::INFO,
 				'scheduler'
 			);
+
 			// Update lastrun
 			$this->updateLastRun($task->extension_id, $task->params);
 			$dispatcher->trigger('onExecuteScheduledTask', array($this));
