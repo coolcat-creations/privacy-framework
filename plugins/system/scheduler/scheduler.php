@@ -63,11 +63,11 @@ class PlgSystemScheduler extends JPlugin
 
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-					->update($db->quoteName('#__extensions'))
-					->set($db->quoteName('params') . ' = ' . $db->quote($this->params->toString('JSON')))
-					->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
-					->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
-					->where($db->quoteName('element') . ' = ' . $db->quote('scheduler'));
+			->update($db->quoteName('#__extensions'))
+			->set($db->quoteName('params') . ' = ' . $db->quote($this->params->toString('JSON')))
+			->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
+			->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
+			->where($db->quoteName('element') . ' = ' . $db->quote('scheduler'));
 
 		try
 		{
@@ -99,9 +99,9 @@ class PlgSystemScheduler extends JPlugin
 			// Unlock the tables after writing
 			$db->unlockTables();
 		}
-		catch (Exception $e)
+		catch (JDatabaseException $e)
 		{
-			// If we can't lock the tables assume we have somehow failed
+			// If we can't unlock the tables assume we have somehow failed
 			$result = false;
 		}
 
@@ -141,13 +141,11 @@ class PlgSystemScheduler extends JPlugin
 			->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
 			->where($db->quoteName('folder') . ' = ' . $db->quote('cronnable'));
 
-		$db->setQuery($query);
-
 		try
 		{
-			$tasks = $db->loadObjectList();
+			$tasks = $db->setQuery($query)->loadObjectList();
 		}
-		catch (RuntimeException $e)
+		catch (JDatabaseException $e)
 		{
 			return;
 		}
@@ -188,7 +186,7 @@ class PlgSystemScheduler extends JPlugin
 			$endTime    = microtime(true);
 			$timeToLoad = sprintf('%0.2f', $endTime - $startTime);
 			JLog::add(
-				'Main Scheduler:' . $task->extension_id . ':' . $task->name . ' tooks ' . $timeToLoad . ' seconds',
+				'Main Scheduler:' . $task->extension_id . ':' . $task->name . ' took ' . $timeToLoad . ' seconds',
 				JLog::INFO,
 				'scheduler'
 			);
@@ -250,16 +248,16 @@ class PlgSystemScheduler extends JPlugin
 
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-					->update($db->quoteName('#__extensions'))
-					->set($db->quoteName('params') . ' = ' . $db->quote($registry->toString('JSON')))
-					->where($db->quoteName('extension_id') . ' = ' . $eid);
+			->update($db->quoteName('#__extensions'))
+			->set($db->quoteName('params') . ' = ' . $db->quote($registry->toString('JSON')))
+			->where($db->quoteName('extension_id') . ' = ' . $eid);
 
 		try
 		{
 			// Lock the tables to prevent multiple plugin executions causing a race condition
 			$db->lockTable('#__extensions');
 		}
-		catch (Exception $e)
+		catch (JDatabaseException $e)
 		{
 			// If we can't lock the tables it's too risky to continue execution
 			return;
@@ -272,9 +270,9 @@ class PlgSystemScheduler extends JPlugin
 
 			$this->clearCacheGroups(array('com_plugins'), array(0, 1));
 		}
-		catch (Exception $exc)
+		catch (JDatabaseException $exc)
 		{
-			// If we failed to execite
+			// If we failed to execute
 			$db->unlockTables();
 			$result = false;
 		}
@@ -284,9 +282,9 @@ class PlgSystemScheduler extends JPlugin
 			// Unlock the tables after writing
 			$db->unlockTables();
 		}
-		catch (Exception $e)
+		catch (JDatabaseException $e)
 		{
-			// If we can't lock the tables assume we have somehow failed
+			// If we can't unlock the tables assume we have somehow failed
 			$result = false;
 		}
 
