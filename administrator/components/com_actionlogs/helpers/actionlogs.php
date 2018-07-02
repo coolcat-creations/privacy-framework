@@ -10,6 +10,8 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Filesystem\Path;
+use Joomla\String\StringHelper;
+use Joomla\Utilities\ArrayHelper;
 
 /**
  * Actionlogs component helper.
@@ -83,9 +85,9 @@ class ActionlogsHelper
 	{
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-				->select('a.*')
-				->from($db->quoteName('#__action_logs_tables_data', 'a'))
-				->where($db->quoteName('a.type_alias') . ' = ' .$db->quote($context));
+			->select('a.*')
+			->from($db->quoteName('#__action_logs_tables_data', 'a'))
+			->where($db->quoteName('a.type_alias') . ' = ' . $db->quote($context));
 
 		$db->setQuery($query);
 
@@ -110,7 +112,7 @@ class ActionlogsHelper
 		$query = $db->getQuery(true)
 			->select($db->quoteName(array($idField, $field)))
 			->from($db->quoteName($table))
-			->where($db->quoteName($idField) . ' IN (' . implode(',', $pks) . ')');
+			->where($db->quoteName($idField) . ' IN (' . implode(',', ArrayHelper::toInteger($pks)) . ')');
 		$db->setQuery($query);
 
 		try
@@ -143,8 +145,16 @@ class ActionlogsHelper
 			$messageData['extension_name'] = self::translateExtensionName($messageData['extension_name']);
 		}
 
+		$linkMode = JFactory::getApplication()->get('force_ssl', 0) >= 1 ? 1 : -1;
+
 		foreach ($messageData as $key => $value)
 		{
+			// Convert relative url to absolute url so that it is clickable in action logs notification email
+			if (StringHelper::strpos($value, 'index.php?') === 0)
+			{
+				$value = JRoute::link('administrator', $value, false, $linkMode);
+			}
+
 			$message = str_replace('{' . $key . '}', JText::_($value), $message);
 		}
 
@@ -154,12 +164,13 @@ class ActionlogsHelper
 	/**
 	 * Get link to an item of given content type
 	 *
-	 * @param   string  $component
-	 * @param   string  $contentType
-	 * @param   int     $id
-	 * @param   string  $urlVar
+	 * @param   string   $component
+	 * @param   string   $contentType
+	 * @param   integer  $id
+	 * @param   string   $urlVar
 	 *
 	 * @return  string  Link to the content item
+	 *
 	 * @since   __DEPLOY_VERSION__
 	 */
 	public static function getContentTypeLink($component, $contentType, $id, $urlVar = 'id')
@@ -188,5 +199,76 @@ class ActionlogsHelper
 
 		// Return default link to avoid having to implement getContentTypeLink in most of our components
 		return 'index.php?option=' . $component . '&task=' . $contentType . '.edit&' . $urlVar . '=' . $id;
+	}
+
+	/**
+	 * Load both enabled and disabled actionlog plugins language file.
+	 *
+	 * It is used to make sure actions log is displayed properly instead of only language items displayed when a plugin is disabled.
+	 *
+	 * @return  void
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	public static function loadActionLogPluginsLanguage()
+	{
+		$lang = JFactory::getLanguage();
+		$db   = JFactory::getDbo();
+
+		// Get all (both enabled and disabled) actionlog plugins
+		$query = $db->getQuery(true)
+			->select(
+				$db->quoteName(
+					array(
+						'folder',
+						'element',
+						'params',
+						'extension_id'
+					),
+					array(
+						'type',
+						'name',
+						'params',
+						'id'
+					)
+				)
+			)
+			->from('#__extensions')
+			->where('type = ' . $db->quote('plugin'))
+			->where('folder = ' . $db->quote('actionlog'))
+			->where('state IN (0,1)')
+			->order('ordering');
+		$db->setQuery($query);
+
+		try
+		{
+			$rows = $db->loadObjectList();
+		}
+		catch (RuntimeException $e)
+		{
+			$rows = array();
+		}
+
+		if (empty($rows))
+		{
+			return;
+		}
+
+		foreach ($rows as $row)
+		{
+			$name      = $row->name;
+			$type      = $row->type;
+			$extension = 'Plg_' . $type . '_' . $name;
+			$extension = strtolower($extension);
+
+			// If language already loaded, don't load it again.
+			if ($lang->getPaths($extension))
+			{
+				continue;
+			}
+
+			$lang->load($extension, JPATH_ADMINISTRATOR, null, false, true)
+			|| $lang->load($extension, JPATH_PLUGINS . '/' . $type . '/' . $name, null, false, true);
+		}
 	}
 }

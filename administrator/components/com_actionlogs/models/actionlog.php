@@ -27,7 +27,8 @@ class ActionlogsModelActionlog extends JModelLegacy
 	 * @param   array    $messages            The contents of the messages to be logged
 	 * @param   string   $messageLanguageKey  The language key of the message
 	 * @param   string   $context             The context of the content passed to the plugin
-	 * @param   int      $userId              ID of user perform the action, usually ID of current logged in user
+	 * @param   integer  $userId              ID of user perform the action, usually ID of current logged in user
+	 *
 	 * @return  void
 	 *
 	 * @since   __DEPLOY_VERSION__
@@ -65,7 +66,6 @@ class ActionlogsModelActionlog extends JModelLegacy
 			{
 				$db->insertObject('#__action_logs', $logMessage);
 				$loggedMessages[] = $logMessage;
-
 			}
 			catch (RuntimeException $e)
 			{
@@ -97,7 +97,7 @@ class ActionlogsModelActionlog extends JModelLegacy
 
 		$query->select($db->quoteName(array('email', 'params')))
 			->from($db->quoteName('#__users'))
-			->where($db->quoteName('params') . ' LIKE ' . $db->quote('%"logs_notification_option":"1"%'));
+			->where($db->quoteName('params') . ' LIKE ' . $db->quote('%"logs_notification_option":1%'));
 
 		$db->setQuery($query);
 
