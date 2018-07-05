@@ -162,9 +162,15 @@ class PlgSystemScheduler extends JPlugin
 		foreach ($tasks as $task)
 		{
 			$taskParams = json_decode($task->params, true);
-			
-			$now  = time();
-			$last = (int) $taskParams['lastrun'];
+			$now        = time();
+
+			// Sanity check
+			if ((!isset($taskParams['lastrun'])) || (!isset($taskParams['cachetimeout'])))
+			{
+				continue;
+			}
+
+			$last          = (int) $taskParams['lastrun'];
 			$cache_timeout = (int) $taskParams['cachetimeout'];
 			$cache_timeout = 60 * $cache_timeout;
 
