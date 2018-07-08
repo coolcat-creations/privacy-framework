@@ -39,6 +39,22 @@ class PlgPrivacyUser extends PrivacyPlugin
 	protected $autoloadLanguage = true;
 
 	/**
+	 * Contacts array
+	 *
+	 * @var    Array
+	 * @since  __DEPLOY_VERSION__
+	 */
+	protected $contacts = array();
+
+	/**
+	 * Contents array
+	 *
+	 * @var    Array
+	 * @since  __DEPLOY_VERSION__
+	 */
+	protected $contents = array();
+
+	/**
 	 * Performs validation to determine if the data associated with a remove information request can be processed
 	 *
 	 * This event will not allow a super user account to be removed
@@ -101,6 +117,20 @@ class PlgPrivacyUser extends PrivacyPlugin
 		$domains[] = $this->createNotesDomain($user);
 		$domains[] = $this->createProfileDomain($user);
 		$domains[] = $this->createUserCustomFieldsDomain($user);
+		$domains[] = $this->createContactDomain($user);
+
+		// An user may have more than 1 contact linked to him
+		foreach ($this->contacts as $contact)
+		{
+			$domains[] = $this->createContactCustomFieldsDomain($contact);
+		}
+
+		$domains[] = $this->createContentDomain($user);
+
+		foreach ($this->contents as $content)
+		{
+			$domains[] = $this->createContentCustomFieldsDomain($content);
+		}
 
 		return $domains;
 	}
@@ -302,6 +332,132 @@ class PlgPrivacyUser extends PrivacyPlugin
 
 			$data = array(
 				'user_id'     => $user->id,
+				'field_name'  => $field->name,
+				'field_title' => $field->title,
+				'field_value' => $fieldValue,
+			);
+
+			$domain->addItem($this->createItemFromArray($data));
+		}
+
+		return $domain;
+	}
+
+	/**
+	 * Create the domain for the user contact data
+	 *
+	 * @param   JTableUser  $user  The JTableUser object to process
+	 *
+	 * @return  PrivacyExportDomain
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private function createContactDomain(JTableUser $user)
+	{
+		$domain = $this->createDomain('user contact', 'Joomla! user contact data');
+
+		$query = $this->db->getQuery(true)
+			->select('*')
+			->from($this->db->quoteName('#__contact_details'))
+			->where($this->db->quoteName('user_id') . ' = ' . $this->db->quote($user->id))
+			->order($this->db->quoteName('ordering') . ' ASC');
+
+		$items = $this->db->setQuery($query)->loadAssocList();
+
+		foreach ($items as $item)
+		{
+			$domain->addItem($this->createItemFromArray($item));
+			$this->contacts[] = (object) $item;
+		}
+
+		return $domain;
+	}
+
+	/**
+	 * Create the domain for the contact custom fields
+	 *
+	 * @param   Object  $contact  The contact to process
+	 *
+	 * @return  PrivacyExportDomain
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private function createContactCustomFieldsDomain($contact)
+	{
+		$domain = $this->createDomain('contact custom fields', 'Joomla! contact custom fields data');
+
+		// Get item's fields, also preparing their value property for manual display
+		$fields = FieldsHelper::getFields('com_contact.contact', $contact);
+
+		foreach ($fields as $field)
+		{
+			$fieldValue = is_array($field->value) ? implode(', ', $field->value) : $field->value;
+
+			$data = array(
+				'contact_id'  => $contact->id,
+				'field_name'  => $field->name,
+				'field_title' => $field->title,
+				'field_value' => $fieldValue,
+			);
+
+			$domain->addItem($this->createItemFromArray($data));
+		}
+
+		return $domain;
+	}
+
+	/**
+	 * Create the domain for the user content data
+	 *
+	 * @param   JTableUser  $user  The JTableUser object to process
+	 *
+	 * @return  PrivacyExportDomain
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private function createContentDomain(JTableUser $user)
+	{
+		$domain = $this->createDomain('user content', 'Joomla! user content data');
+
+		$query = $this->db->getQuery(true)
+			->select('*')
+			->from($this->db->quoteName('#__content'))
+			->where($this->db->quoteName('created_by') . ' = ' . $this->db->quote($user->id))
+			->order($this->db->quoteName('ordering') . ' ASC');
+
+		$items = $this->db->setQuery($query)->loadAssocList();
+
+		foreach ($items as $item)
+		{
+			$domain->addItem($this->createItemFromArray($item));
+			$this->contents[] = (object) $item;
+		}
+
+		return $domain;
+	}
+
+	/**
+	 * Create the domain for the content custom fields
+	 *
+	 * @param   Object  $content  The content to process
+	 *
+	 * @return  PrivacyExportDomain
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private function createContentCustomFieldsDomain($content)
+	{
+		$domain = $this->createDomain('content custom fields', 'Joomla! content custom fields data');
+
+		// Get item's fields, also preparing their value property for manual display
+		$fields = FieldsHelper::getFields('com_content.article', $content);
+
+		foreach ($fields as $field)
+		{
+			$fieldValue = is_array($field->value) ? implode(', ', $field->value) : $field->value;
+
+			$data = array(
+				'content_id'  => $content->id,
 				'field_name'  => $field->name,
 				'field_title' => $field->title,
 				'field_value' => $fieldValue,
