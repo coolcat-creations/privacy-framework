@@ -40,7 +40,7 @@ class JFormFieldprivacy extends JFormFieldRadio
 	{
 		$privacynote = !empty($this->element['note']) ? $this->element['note'] : Text::_('PLG_SYSTEM_PRIVACYCONSENT_NOTE_FIELD_DEFAULT');
 
-		echo '<div class="alert alert-info">' . $privacynote . '</div>';
+		echo '<div class="alert alert-info">' . Text::_($privacynote) . '</div>';
 
 		return parent::getInput();
 	}
