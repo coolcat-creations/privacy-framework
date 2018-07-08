@@ -117,6 +117,7 @@ class PlgPrivacyUser extends PrivacyPlugin
 		$domains[] = $this->createNotesDomain($user);
 		$domains[] = $this->createProfileDomain($user);
 		$domains[] = $this->createUserCustomFieldsDomain($user);
+		$domains[] = $this->createMessageDomain($user);
 		$domains[] = $this->createContactDomain($user);
 
 		// An user may have more than 1 contact linked to him
@@ -464,6 +465,36 @@ class PlgPrivacyUser extends PrivacyPlugin
 			);
 
 			$domain->addItem($this->createItemFromArray($data));
+		}
+
+		return $domain;
+	}
+
+	/**
+	 * Create the domain for the user message data
+	 *
+	 * @param   JTableUser  $user  The JTableUser object to process
+	 *
+	 * @return  PrivacyExportDomain
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private function createMessageDomain(JTableUser $user)
+	{
+		$domain = $this->createDomain('user message', 'Joomla! user message data');
+
+		$query = $this->db->getQuery(true)
+			->select('*')
+			->from($this->db->quoteName('#__messages'))
+			->where($this->db->quoteName('user_id_from') . ' = ' . $this->db->quote($user->id))
+			->orWhere($this->db->quoteName('user_id_to') . ' = ' . $this->db->quote($user->id))
+			->order($this->db->quoteName('date_time') . ' ASC');
+
+		$items = $this->db->setQuery($query)->loadAssocList();
+
+		foreach ($items as $item)
+		{
+			$domain->addItem($this->createItemFromArray($item));
 		}
 
 		return $domain;
